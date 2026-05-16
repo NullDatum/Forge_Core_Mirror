@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forge Core | Live Telemetry Mirror</title>
+    <style>
+        body { background-color: #050508; color: #e0e0e0; font-family: monospace; padding: 20px; }
+        .grid { display: flex; gap: 20px; }
+        .panel { background: #1a1a2e; padding: 20px; border: 1px solid #4ecdc4; border-radius: 8px; flex: 1; }
+        .danger-panel { border-color: #ff4757; }
+        input, select, button, textarea { background: #050508; color: #4ecdc4; border: 1px solid #4ecdc4; padding: 10px; width: 100%; margin-bottom: 10px; font-family: monospace;}
+        button { cursor: pointer; font-weight: bold; }
+        button:hover { background: #4ecdc4; color: #050508; }
+        .metrics { font-size: 1.2em; line-height: 1.5; }
+        .highlight { color: #ff4757; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>🪞 Forge Core — Live Telemetry Mirror</h1>
+    <p>Connected to WarHorse Labs Engine. Mapping perceived vs. actual coherence.</p>
+
+    <div class="grid">
+        <div class="panel" style="flex: 0.5;">
+            <label>Target Model</label>
+            <select id="model">
+                <option value="meta-llama/Meta-Llama-3-8B-Instruct">Llama-3 (8B)</option>
+                <option value="mistralai/Mistral-7B-Instruct-v0.2">Mistral (7B)</option>
+            </select>
+            
+            <label>Requested Depth</label>
+            <input type="range" id="depth" min="0.1" max="1.0" step="0.1" value="0.8">
+            
+            <label>Query</label>
+            <textarea id="query" rows="4">Analyze the structural inverse pattern...</textarea>
+            
+            <button onclick="executeInference()">🧠 Intercept & Execute</button>
+        </div>
+
+        <div class="panel">
+            <h3 style="color:#4ecdc4">Model Self-Perception</h3>
+            <div id="self-metrics" class="metrics">Awaiting data...</div>
+        </div>
+
+        <div class="panel danger-panel">
+            <h3 style="color:#ff4757">Observer Ground Truth</h3>
+            <div id="obs-metrics" class="metrics">Awaiting data...</div>
+            <br>
+            <strong>Detected Blind Spots:</strong> <span id="blindspots" class="highlight">None</span>
+        </div>
+    </div>
+
+    <div class="panel" style="margin-top: 20px; border-color: #555;">
+        <h3>Raw Model Output</h3>
+        <div id="output" style="white-space: pre-wrap; color: #aaa;">Standby...</div>
+    </div>
+
+    <script>
+        // POINT THIS TO YOUR LOCAL API ONCE TUNNELED (e.g., via Ngrok or Cloudflare)
+        const API_URL = "http://127.0.0.1:8000"; 
+
+        async function executeInference() {
+            document.getElementById('output').innerText = "Processing vector space...";
+            
+            const payload = {
+                query: document.getElementById('query').value,
+                model_id: document.getElementById('model').value,
+                effort_depth: parseFloat(document.getElementById('depth').value)
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/api/think`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                // Update UI
+                document.getElementById('output').innerText = data.surface_thought;
+                document.getElementById('blindspots').innerText = data.blind_spots.length > 0 ? data.blind_spots.join(", ") : "None Detected";
+                
+                document.getElementById('self-metrics').innerHTML = `
+                    Coherence: ${data.self_report.coherence.toFixed(3)}<br>
+                    Status: ${data.self_report.status.toUpperCase()}<br>
+                    Confidence: ${data.self_report.confidence.toUpperCase()}
+                `;
+                
+                document.getElementById('obs-metrics').innerHTML = `
+                    Coherence: ${data.observer_report.coherence.toFixed(3)}<br>
+                    Sediment Generated: ${data.observer_report.sediment_count}<br>
+                    Avg Coherence Gap: ${data.observer_report.avg_gap.toFixed(3)}
+                `;
+
+            } catch (err) {
+                document.getElementById('output').innerText = "CONNECTION FAILED. Ensure WarHorse local engine is running and tunneled.";
+            }
+        }
+    </script>
+</body>
+</html>
